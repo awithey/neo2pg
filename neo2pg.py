@@ -21,11 +21,16 @@ class table(object):
         self.columnHeadings = []
         self.rows = []
 
-    def addRow(self, newRow):
-        for col_name in newRow:
+    def addRowWithId(self, row, rowId):
+        newRow = row.copy()
+        newRow["id"] = rowId
+        self.addRow(newRow)
+
+    def addRow(self, row):
+        for col_name in row:
             if col_name not in self.columnHeadings:
                 self.columnHeadings.append(col_name) # accumulate column headings for later output
-        self.rows.append(newRow)
+        self.rows.append(row)
 
 ### Start of code :-)
 
@@ -38,7 +43,7 @@ print "Connect to", config.url()
 graph = Graph(config.url())
 print "Connected:", graph.bound
 
-relationshipTables = dict # one table for each of the relationship types for the current label
+relationshipTables = {} # one table for each of the relationship types for the current label
 
 for label in graph.node_labels:
     print "Label:", label
@@ -49,17 +54,21 @@ for label in graph.node_labels:
     nodes = graph.find(label, limit=3)
 
     for node in nodes:
-        currentTable.addRow(node.properties)
+        currentTable.addRowWithId(node.properties, node._id)
 
         # get relationships
         print "Get relationships *** LIMIT 3 ***"
         nodeRelationships = graph.match(start_node=node, limit=3)
 
         for rel in nodeRelationships:
-            relTableName = label + "_" + rel.end_node.label
+            relTableName = str(label + "_" + rel.type)
             if relTableName in relationshipTables:
                 relTable = relationshipTables[relTableName]
             else:
                 relTable = table()
 
-            relTable.addRow(rel.properties)
+            relRows = rel.properties.copy()
+            relRows["nodeId"] = node._id
+            relRows["otherNodeId"] = rel.end_node._id
+
+            relTable.addRow(relRows)
