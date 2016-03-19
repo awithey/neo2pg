@@ -9,3 +9,6 @@ When it's usable, I''l change the README.md :-)
 
 This requires a [Neo4j link](http://neo4j.com/download/) database AND a [PostgreSQL link](http://www.postgresql.org/download/) database.
 
+Dependancies:
+py2neo
+	pip install py2neo

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/neo2pg.iml" filepath="$PROJECT_DIR$/neo2pg.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/neo2pg.iml" filepath="$PROJECT_DIR$/.idea/neo2pg.iml" />
     </modules>
   </component>
 </project>
