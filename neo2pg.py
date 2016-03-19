@@ -1,29 +1,65 @@
 from py2neo import authenticate, Graph, Path, Node, Relationship
 
-#authenticate("localhost:7474", "user", "password")
+class Neo4jConfig(object):
+    def __init__(self):
+        self.protocol = "http"
+        self.hostName = "localhost"
+        self.portNumber = 7474
+        self.dbPath = "/db/data/"
+        self.useAuthentication = False
+        self.userId = ""
+        self.password = ""
 
-neo_uri = "http://localhost:7474/db/data/"
-print "Connect to", neo_uri
-graph = Graph(neo_uri)
+    def host(self):
+        return self.hostName + ":" + str(self.portNumber)
+
+    def url(self):
+        return self.protocol + "://" + self.host() + self.dbPath
+
+class table(object):
+    def __init__(self):
+        self.columnHeadings = []
+        self.rows = []
+
+    def addRow(self, newRow):
+        for col_name in newRow:
+            if col_name not in self.columnHeadings:
+                self.columnHeadings.append(col_name) # accumulate column headings for later output
+        self.rows.append(newRow)
+
+### Start of code :-)
+
+config = Neo4jConfig()
+
+if config.useAuthentication:
+    authenticate(config.host(), config.userId, config.password)
+
+print "Connect to", config.url()
+graph = Graph(config.url())
 print "Connected:", graph.bound
+
+relationshipTables = dict # one table for each of the relationship types for the current label
 
 for label in graph.node_labels:
     print "Label:", label
 
-    print "Get nodes *** LIMIT 2 ***"
-    nodes = graph.find(label,limit=2)
+    currentTable = table()
+
+    print "Get nodes *** LIMIT 3 ***"
+    nodes = graph.find(label, limit=3)
 
     for node in nodes:
-        print "\tNode:", node
+        currentTable.addRow(node.properties)
 
-        for node_prop in node.properties:
-            node_value = node.properties[node_prop]
-            print "\t\tProperty:", node_prop, "=", node_value
+        # get relationships
+        print "Get relationships *** LIMIT 3 ***"
+        nodeRelationships = graph.match(start_node=node, limit=3)
 
-        print "Getting relationships *** LIMIT 10 ***"
-        relationships = graph.match(start_node=node,limit=10)
+        for rel in nodeRelationships:
+            relTableName = label + "_" + rel.end_node.label
+            if relTableName in relationshipTables:
+                relTable = relationshipTables[relTableName]
+            else:
+                relTable = table()
 
-        for rel in relationships:
-            print "\t\t\tRelated node:", rel.end_node
-            for rel_prop in rel.properties:
-                print "\t\t\t\tProperty:", rel_prop, "=", rel.properties[rel_prop]
+            relTable.addRow(rel.properties)
