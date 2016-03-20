@@ -10,6 +10,7 @@ class Neo4jConfig(object):
         self.useAuthentication = False
         self.userId = ""
         self.password = ""
+        self.limit = 10 # limit = 0 means no limit, limit =n where n > 0 limits queries to at most n rows
 
     def host(self):
         return self.hostName + ":" + str(self.portNumber)
@@ -17,6 +18,7 @@ class Neo4jConfig(object):
     def url(self):
         return self.protocol + "://" + self.host() + self.dbPath
 
+# This is from http://stackoverflow.com/questions/5838605/python-dictwriter-writing-utf-8-encoded-csv-files :-)
 class DictUnicodeWriter(object):
 
     def __init__(self, f, fieldnames, dialect=csv.excel, encoding="utf-8", **kwds):
@@ -79,12 +81,15 @@ print "Connected:", graph.bound
 relationshipTables = {} # one table for each of the relationship types for the current label
 
 for label in graph.node_labels:
-    print "Label:", label
+    print "Get nodes for label:", label
 
     currentTable = table()
 
-    print "Get nodes *** LIMIT 3 ***"
-    nodes = graph.find(label, limit=3)
+    if config.limit > 0:
+        print "*** Get Nodes with limit", config.limit
+        nodes = graph.find(label, limit=config.limit)
+    else:
+        nodes = graph.find(label)
 
     for node in nodes:
         row = node.properties.copy()
@@ -92,15 +97,21 @@ for label in graph.node_labels:
         currentTable.addRow(row)
 
         # get relationships
-        print "Get relationships *** LIMIT 3 ***"
-        nodeRelationships = graph.match(start_node=node, limit=3)
+        if config.limit > 0:
+            # limit is for n relationships per node, so you may end up with n^2 relationships!
+            nodeRelationships = graph.match(start_node=node, limit=config.limit)
+        else:
+            nodeRelationships = graph.match(start_node=node)
+
 
         for rel in nodeRelationships:
             relTableName = str(label + "_" + rel.type)
+            print "\trelTableName", relTableName
             if relTableName in relationshipTables:
                 relTable = relationshipTables[relTableName]
             else:
                 relTable = table()
+                relationshipTables[relTableName]=relTable
 
             relRows = rel.properties.copy()
             relRows["nodeId"] = node._id
@@ -112,10 +123,10 @@ for label in graph.node_labels:
     print "Export label CSV", tableCsvFileName
     currentTable.saveCsv(tableCsvFileName)
 
-    for relTableName in relationshipTables:
-        relTable = relationshipTables[relTableName]
-        relTableCsvFileName = relTableName + ".csv"
-        print "Export relationship CSV", relTableCsvFileName
-        relTable.saveCsv(relTableCsvFileName)
+for relTableName in relationshipTables:
+    relTable = relationshipTables[relTableName]
+    relTableCsvFileName = relTableName + ".csv"
+    print "Export relationship CSV", relTableCsvFileName
+    relTable.saveCsv(relTableCsvFileName)
 
 print "Finished"
