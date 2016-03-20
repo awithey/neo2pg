@@ -165,6 +165,7 @@ def main():
                         matchLimit = limit - nodecount
                 else:
                     break
+            nodeCountCheck = nodecount
 
             # nodes = graph.find(label)
             nodes = graph.cypher.stream("MATCH (n:" + str(label) + ") RETURN n ORDER BY id(n) SKIP {skip} LIMIT {limit}", {"skip": nodecount, "limit": matchLimit})
@@ -201,6 +202,9 @@ def main():
 
                     relTable.addRow(relRows)
             print "\tNode count", nodecount
+            if nodecount == nodeCountCheck:
+                print "ERROR retrieving nodes! We appear stuck in a loop at", nodecount
+                sys.exit(3)
 
         tableCsvFileName = label + ".csv"
         print "Export label CSV", tableCsvFileName
