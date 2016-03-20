@@ -6,8 +6,8 @@ neo2csv.py copy all Neo4j nodes and relationships to separate CSV files (one for
 This requires a [Neo4j](http://neo4j.com/download/) database.
 
 ### Dependancies:
-py2neo
-	pip install py2neo
+*py2neo<br/>
+&nbsp; pip install py2neo
 
 ## Usage:
 neo2csv.py<br/>
@@ -19,4 +19,5 @@ neo2csv.py<br/>
 &nbsp; userid=[neo4j user id {default=none}<br/>
 &nbsp; password=[passsword] {default=none}<br/>
 &nbsp; limit=[number: limit rows returned, 0 for all] {default=0}<br/>
-&nbsp; csvpath=[path to folder where CSV files are written] {default=.}
+&nbsp; csvpath=[path to folder where CSV files are written] {default=.}<br />
+&nbsp; nodelabels=[comma delimted list of node lables, reads list form db if empty] {default=.}
