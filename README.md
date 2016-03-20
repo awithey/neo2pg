@@ -1,14 +1,14 @@
 # neo2pg
-Copy Neo4j nodes to a PostgreSQL database
+I inteded this to write form Neo4j to PostgreSQL, but for now I'm content with output to CSV and then importing to PG.
 
-# DO NOT USE THIS! (yet)
+neo2csv.py copy all Neo4j nodes and relationships to separate CSV files (one for each node label and relationship label).
 
-This is very much a work in progress.
-
-When it's usable, I''l change the README.md :-)
-
-This requires a [Neo4j link](http://neo4j.com/download/) database AND a [PostgreSQL link](http://www.postgresql.org/download/) database.
+This requires a [Neo4j link](http://neo4j.com/download/) database.
 
 Dependancies:
 py2neo
 	pip install py2neo
+
+Usage:
+    Edit neo2csv.py, add relavant config values (TODO: Make these parameters :-)
+    run neo2csv.py
