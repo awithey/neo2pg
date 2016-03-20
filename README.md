@@ -10,13 +10,13 @@ py2neo
 	pip install py2neo
 
 ## Usage:
-neo2csv.py
- -? | --help {show this help}
- protocol=[http|https] {default=http}
- host=[neo4j hostname] {default=localhost
- port=[neo4j port number] {default=7474}
- db=[relative path to neo4j db] {default=/db/data
- userid=[neo4j user id {default=none}
- password=[passsword] {default=none}
- limit=[number: limit rows returned, 0 for all] {default=0}
- csvpath=[path to folder where CSV files are written] {default=.}
+neo2csv.py<br/>
+&nbsp; -? | --help {show the help}<br/>
+&nbsp; protocol=[http|https] {default=http}<br/>
+&nbsp; host=[neo4j hostname] {default=localhost<br/>
+&nbsp; port=[neo4j port number] {default=7474}<br/>
+&nbsp; db=[relative path to neo4j db] {default=/db/data<br/>
+&nbsp; userid=[neo4j user id {default=none}<br/>
+&nbsp; password=[passsword] {default=none}<br/>
+&nbsp; limit=[number: limit rows returned, 0 for all] {default=0}<br/>
+&nbsp; csvpath=[path to folder where CSV files are written] {default=.}

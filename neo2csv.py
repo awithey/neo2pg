@@ -14,6 +14,7 @@ class Neo4jConfig(object):
         self.password = ""
         self.limit = 0 # limit = 0 means no limit, limit =n where n > 0 limits queries to at most n rows
         self.csvpath = "."
+        self.nodeLabels = ""
 
     def host(self):
         return self.hostName + ":" + str(self.portNumber)
@@ -83,10 +84,11 @@ def usage():
     print " password=[passsword] {default=none}"
     print " limit=[number: limit rows returned, 0 for all] {default=0}"
     print " csvpath=[path to folder where CSV files are written] {default=.}"
+    print " nodelabels=[comma delimited list of node labels, get list from db if empty] {default=}"
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"?",["help","protocol=","host=","port=","db=","userid=","password=","limit=","csvpath="])
+        opts, args = getopt.getopt(sys.argv[1:],"?",["help","protocol=","host=","port=","db=","userid=","password=","limit=","csvpath=","nodelabels="])
     except getopt.GetoptError:
         print "ERROR unknown option!"
         print ""
@@ -115,6 +117,8 @@ def main():
             config.limit = arg
         elif opt == "--csvpath":
             config.csvpath = arg
+        elif opt == "--nodelabels":
+            config.nodeLabels = arg
         else:
             print "ERROR: Unknown option", opt
             print ""
@@ -136,7 +140,12 @@ def main():
 
     relationshipTables = {} # one table for each of the relationship types for the current label
 
-    for label in graph.node_labels:
+    if len(config.nodeLabels) > 0:
+        labels = config.nodeLabels.split(',')
+    else:
+        labels = graph.node_labels # Get list of labels from the database
+
+    for label in labels:
         print "Get nodes for label:", label
 
         currentTable = table()
