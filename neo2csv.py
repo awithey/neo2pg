@@ -12,7 +12,7 @@ class Neo4jConfig(object):
         self.dbPath = "/db/data/"
         self.userId = ""
         self.password = ""
-        self.limit = 10 # limit = 0 means no limit, limit =n where n > 0 limits queries to at most n rows
+        self.limit = 0 # limit = 0 means no limit, limit =n where n > 0 limits queries to at most n rows
         self.csvpath = "."
 
     def host(self):
@@ -61,10 +61,12 @@ class table(object):
                 self.columnHeadings.append(col_name) # accumulate column headings for later output
         self.rows.append(row)
 
-    def saveCsv(self, filename):
+    def saveCsv(self, path, filename):
         fieldnames=[s.encode("utf-8") for s in self.columnHeadings]
         fieldnames.sort()
-        with open(filename, 'wb') as csvfile:
+        fullpath = os.path.join(path,filename)
+        with open(fullpath, 'wb') as csvfile:
+            print "\tWriting to", fullpath
             csvfile.write(u'\ufeff'.encode('utf8')) # BOM (optional...Excel needs it to open UTF-8 file properly)
             csvwriter = DictUnicodeWriter(csvfile, fieldnames)
             csvwriter.writeheader()
@@ -86,7 +88,8 @@ def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:],"?",["help","protocol=","host=","port=","db=","userid=","password=","limit=","csvpath="])
     except getopt.GetoptError:
-        print str(err)
+        print "ERROR unknown option!"
+        print ""
         usage()
         sys.exit(2)
 
@@ -114,6 +117,7 @@ def main():
             config.csvpath = arg
         else:
             print "ERROR: Unknown option", opt
+            print ""
             usage()
             sys.exit(2)
 
@@ -158,7 +162,7 @@ def main():
 
             for rel in nodeRelationships:
                 relTableName = str(label + "_" + rel.type)
-                print "\trelTableName", relTableName
+
                 if relTableName in relationshipTables:
                     relTable = relationshipTables[relTableName]
                 else:
@@ -173,13 +177,13 @@ def main():
 
         tableCsvFileName = label + ".csv"
         print "Export label CSV", tableCsvFileName
-        currentTable.saveCsv(tableCsvFileName)
+        currentTable.saveCsv(config.csvpath,tableCsvFileName)
 
     for relTableName in relationshipTables:
         relTable = relationshipTables[relTableName]
         relTableCsvFileName = relTableName + ".csv"
         print "Export relationship CSV", relTableCsvFileName
-        relTable.saveCsv(relTableCsvFileName)
+        relTable.saveCsv(config.csvpath,relTableCsvFileName)
 
     print "Finished"
 
