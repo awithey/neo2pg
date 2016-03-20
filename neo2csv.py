@@ -1,16 +1,19 @@
 from py2neo import authenticate, Graph, Node, Relationship
+
+import sys, getopt, os
 import csv, codecs, cStringIO
 
 class Neo4jConfig(object):
     def __init__(self):
+        # Defaults
         self.protocol = "http"
         self.hostName = "localhost"
         self.portNumber = 7474
         self.dbPath = "/db/data/"
-        self.useAuthentication = False
         self.userId = ""
         self.password = ""
         self.limit = 10 # limit = 0 means no limit, limit =n where n > 0 limits queries to at most n rows
+        self.csvpath = "."
 
     def host(self):
         return self.hostName + ":" + str(self.portNumber)
@@ -67,66 +70,118 @@ class table(object):
             csvwriter.writeheader()
             csvwriter.writerows(self.rows)
 
-### Start of code :-)
+def usage():
+    print "Usage", sys.argv[0]
+    print " -? | --help {show this help}"
+    print " protocol=[http|https] {default=http}"
+    print " host=[neo4j hostname] {default=localhost"
+    print " port=[neo4j port number] {default=7474}"
+    print " db=[relative path to neo4j db] {default=/db/data"
+    print " userid=[neo4j user id {default=none}"
+    print " password=[passsword] {default=none}"
+    print " limit=[number: limit rows returned, 0 for all] {default=0}"
+    print " csvpath=[path to folder where CSV files are written] {default=.}"
 
-config = Neo4jConfig()
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],"?",["help","protocol=","host=","port=","db=","userid=","password=","limit=","csvpath="])
+    except getopt.GetoptError:
+        print str(err)
+        usage()
+        sys.exit(2)
 
-if config.useAuthentication:
-    authenticate(config.host(), config.userId, config.password)
+    config = Neo4jConfig()
 
-print "Connect to", config.url()
-graph = Graph(config.url())
-print "Connected:", graph.bound
-
-relationshipTables = {} # one table for each of the relationship types for the current label
-
-for label in graph.node_labels:
-    print "Get nodes for label:", label
-
-    currentTable = table()
-
-    if config.limit > 0:
-        print "*** Get Nodes with limit", config.limit
-        nodes = graph.find(label, limit=config.limit)
-    else:
-        nodes = graph.find(label)
-
-    for node in nodes:
-        row = node.properties.copy()
-        row["nodeId"] = node._id
-        currentTable.addRow(row)
-
-        # get relationships
-        if config.limit > 0:
-            # limit is for n relationships per node, so you may end up with n^2 relationships!
-            nodeRelationships = graph.match(start_node=node, limit=config.limit)
+    for opt, arg in opts:
+        if opt in ('-?', '--help'):
+            usage()
+            sys.exit(0)
+        elif opt == "--protocol":
+            config.protocol = arg
+        elif opt == "--host":
+            config.hostName = arg
+        elif opt == "--port":
+            config.portNumber = arg
+        elif opt == "--db":
+            config.dbPath = arg
+        elif opt == "--userid":
+            config.userId = arg
+        elif opt == "--password":
+            config.password = arg
+        elif opt == "--limit":
+            config.limit = arg
+        elif opt == "--csvpath":
+            config.csvpath = arg
         else:
-            nodeRelationships = graph.match(start_node=node)
+            print "ERROR: Unknown option", opt
+            usage()
+            sys.exit(2)
 
+    print "Connect to", config.url()
 
-        for rel in nodeRelationships:
-            relTableName = str(label + "_" + rel.type)
-            print "\trelTableName", relTableName
-            if relTableName in relationshipTables:
-                relTable = relationshipTables[relTableName]
+    if len(config.userId) > 0:
+        authenticate(config.host(), config.userId, config.password)
+
+    graph = Graph(config.url())
+    print "Connected:", graph.bound
+
+    #Check if output directory exists
+    if not os.path.isdir(config.csvpath):
+        print "ERROR Directory doesn't exist", config.csvpath
+        sys.exit(1)
+
+    relationshipTables = {} # one table for each of the relationship types for the current label
+
+    for label in graph.node_labels:
+        print "Get nodes for label:", label
+
+        currentTable = table()
+
+        if config.limit > 0:
+            print "*** Get Nodes with limit", config.limit
+            nodes = graph.find(label, limit=config.limit)
+        else:
+            nodes = graph.find(label)
+
+        for node in nodes:
+            row = node.properties.copy()
+            row["nodeId"] = node._id
+            currentTable.addRow(row)
+
+            # get relationships
+            if config.limit > 0:
+                # limit is for n relationships per node, so you may end up with n^2 relationships!
+                nodeRelationships = graph.match(start_node=node, limit=config.limit)
             else:
-                relTable = table()
-                relationshipTables[relTableName]=relTable
+                nodeRelationships = graph.match(start_node=node)
 
-            relRows = rel.properties.copy()
-            relRows["nodeId"] = node._id
-            relRows["otherNodeId"] = rel.end_node._id
 
-            relTable.addRow(relRows)
+            for rel in nodeRelationships:
+                relTableName = str(label + "_" + rel.type)
+                print "\trelTableName", relTableName
+                if relTableName in relationshipTables:
+                    relTable = relationshipTables[relTableName]
+                else:
+                    relTable = table()
+                    relationshipTables[relTableName]=relTable
 
-    tableCsvFileName = label + ".csv"
-    print "Export label CSV", tableCsvFileName
-    currentTable.saveCsv(tableCsvFileName)
+                relRows = rel.properties.copy()
+                relRows["nodeId"] = node._id
+                relRows["otherNodeId"] = rel.end_node._id
 
-for relTableName in relationshipTables:
-    relTable = relationshipTables[relTableName]
-    relTableCsvFileName = relTableName + ".csv"
-    print "Export relationship CSV", relTableCsvFileName
-    relTable.saveCsv(relTableCsvFileName)
+                relTable.addRow(relRows)
 
-print "Finished"
+        tableCsvFileName = label + ".csv"
+        print "Export label CSV", tableCsvFileName
+        currentTable.saveCsv(tableCsvFileName)
+
+    for relTableName in relationshipTables:
+        relTable = relationshipTables[relTableName]
+        relTableCsvFileName = relTableName + ".csv"
+        print "Export relationship CSV", relTableCsvFileName
+        relTable.saveCsv(relTableCsvFileName)
+
+    print "Finished"
+
+if __name__ == "__main__":
+    main()
