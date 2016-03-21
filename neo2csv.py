@@ -1,6 +1,6 @@
 from py2neo import authenticate, Graph, Node, Relationship
 
-import sys, getopt, os
+import sys, getopt, os, datetime
 import csv, codecs, cStringIO
 
 from py2neo.packages.httpstream import http
@@ -201,10 +201,10 @@ def main():
                     relRows["otherNodeId"] = rel.end_node._id
 
                     relTable.addRow(relRows)
-            print "\tNode count", nodecount
+            print "\tNode count", nodecount, " at ", datetime.datetime.now()
             if nodecount == nodeCountCheck:
-                print "ERROR retrieving nodes! We appear stuck in a loop at", nodecount
-                sys.exit(3)
+                print "No more nodes"
+                break
 
         tableCsvFileName = label + ".csv"
         print "Export label CSV", tableCsvFileName
